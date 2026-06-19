@@ -102,7 +102,7 @@ export async function sendPaymentReceiptEmail(
   const amountDisplay = currency === 'KES' ? `KES ${amount.toLocaleString()}` : `$${amount}`
   const date = new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })
 
-  return resend.emails.send({
+  return getResendClient().emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to,
@@ -175,7 +175,7 @@ export async function sendPaymentReceiptEmail(
 // ── PLAN UPGRADE NOTIFICATION ─────────────────────────────────────────────────
 export async function sendPlanUpgradeEmail(to: string, name: string, newPlan: string) {
   const planDisplay = newPlan.charAt(0).toUpperCase() + newPlan.slice(1)
-  return resend.emails.send({
+  return getResendClient().emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to,
