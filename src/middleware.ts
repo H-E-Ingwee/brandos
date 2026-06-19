@@ -4,16 +4,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return supabaseResponse
-  }
-
   const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -33,21 +26,33 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
+
+  // Public pages — always accessible without auth
+  const publicPages = [
+    '/forgot-password',
+    '/reset-password',
+    '/signup/verify-email',
+    '/admin',
+    '/invite',
+  ]
+  if (publicPages.some(p => pathname.startsWith(p))) {
+    return supabaseResponse
+  }
+
+  // Auth routes — redirect to dashboard if already logged in
+  const authRoutes = ['/login', '/signup']
+  if (authRoutes.includes(pathname) && user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
   // Protected routes — redirect to login if not authenticated
   if (pathname.startsWith('/dashboard') && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // Auth routes — redirect to dashboard if already logged in
-  if ((pathname === '/login' || pathname === '/signup') && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 

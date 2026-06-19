@@ -115,9 +115,10 @@ export default function TeamPage() {
     setCancellingId(null)
   }
 
-  const isPro = profile?.plan === 'pro' || profile?.plan === 'agency'
-  const isAgency = profile?.plan === 'agency'
-  const maxMembers = profile?.plan === 'pro' ? 3 : profile?.plan === 'agency' ? 999 : 0
+  const testMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true'
+  const isPro = testMode || profile?.plan === 'pro' || profile?.plan === 'agency'
+  const isAgency = testMode || profile?.plan === 'agency'
+  const maxMembers = testMode ? 999 : profile?.plan === 'pro' ? 3 : profile?.plan === 'agency' ? 999 : 0
   const currentMembers = teamData?.members?.length || 0
   const org = teamData?.organisation
 

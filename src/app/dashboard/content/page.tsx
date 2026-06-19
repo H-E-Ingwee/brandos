@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { MessageSquare, Copy, CheckCircle, RefreshCw, Calendar, Instagram, Linkedin, Lock, Sparkles } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MessageSquare, Copy, CheckCircle, Calendar, Sparkles, Loader2, AlertCircle, Lock, RefreshCw, Trash2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import type { Profile, ContentPost } from '@/lib/supabase/types'
 
 const contentPillars = [
   { id: 'education', name: 'Education', percent: 70, color: '#1A7A6E', desc: 'Skincare tips, ingredient spotlights, how-to guides' },
@@ -9,70 +11,104 @@ const contentPillars = [
   { id: 'promotion', name: 'Promotion', percent: 10, color: '#F25C05', desc: 'Product launches, offers, announcements' },
 ]
 
-const samplePosts = [
-  {
-    id: 1,
-    platform: 'Instagram',
-    type: 'Educational Carousel',
-    pillar: 'Education',
-    caption: '5 reasons why your skincare isn\'t working in Nairobi 🌿\n\nMost skincare products are formulated for European climates — not for Nairobi\'s humidity and UV levels. Here\'s what\'s actually happening to your skin:\n\n1️⃣ The humidity here is different — products that work in London feel heavy and pore-clogging in Nairobi\n2️⃣ Our UV index is higher — you need SPF 30+ every single day, not just when it\'s sunny\n3️⃣ Hard water in Nairobi affects your skin barrier — always use a toner after cleansing\n4️⃣ Imported products often contain ingredients that lighten African skin tones — check your labels\n5️⃣ Your skin needs different hydration in dry season vs rainy season — your routine should change\n\nAt Savanna Skincare, we formulate specifically for Kenyan skin and climate. Every product is tested here, not in a lab in Europe.\n\nSave this post and share it with someone who needs to hear this 💚\n\n#KenyaSkincare #NaturalBeautyKenya #SkincareTips #AfricanSkin #NairobiBeauty #SavannaSkincare',
-    hashtags: '#KenyaSkincare #NaturalBeautyKenya #SkincareTips #AfricanSkin #NairobiBeauty',
-    bestTime: 'Tuesday 7:30am or 8:00pm EAT',
-    engagement: 'High — educational carousels get 3x more saves than single images',
-  },
-  {
-    id: 2,
-    platform: 'Instagram',
-    type: 'Reel',
-    pillar: 'Education',
-    caption: 'POV: You finally found a moisturiser that actually works for your skin 🙌\n\nKenyan skin is not the same as European skin. We need products that understand our climate, our melanin, and our lifestyle.\n\nSavanna Shea Glow Moisturiser:\n✅ Formulated for Nairobi humidity\n✅ SPF 20 built in\n✅ Locally sourced shea butter from Turkana\n✅ No skin-lightening agents\n✅ Tested on African skin tones\n\nLink in bio to shop 🛒\n\n#SavannaSkincare #KenyaBeauty #NaturalSkincare #MadeInKenya',
-    hashtags: '#SavannaSkincare #KenyaBeauty #NaturalSkincare #MadeInKenya',
-    bestTime: 'Thursday 7:00pm EAT',
-    engagement: 'Very High — product Reels with before/after get highest reach',
-  },
-  {
-    id: 3,
-    platform: 'WhatsApp',
-    type: 'Broadcast Message',
-    pillar: 'Education',
-    caption: 'Habari [Name]! 👋\n\nQuick skincare tip for this week:\n\nDid you know that Nairobi\'s altitude (1,795m above sea level) means your skin loses moisture faster than at sea level? This is why so many people in Nairobi struggle with dry skin even when they moisturise regularly.\n\nThe fix: Apply your moisturiser within 60 seconds of washing your face — while your skin is still slightly damp. This locks in the moisture before it evaporates.\n\nTry it this week and let me know if you notice a difference! 💚\n\n— Amina, Savanna Skincare\n\nP.S. Our Shea Glow Moisturiser is specially formulated for Nairobi\'s altitude. Reply "SHOP" to see our current offers.',
-    hashtags: '',
-    bestTime: 'Tuesday or Thursday, 8:00am EAT',
-    engagement: 'Very High — personalised WhatsApp messages get 70%+ open rates',
-  },
-  {
-    id: 4,
-    platform: 'LinkedIn',
-    type: 'Thought Leadership',
-    pillar: 'Education',
-    caption: 'The skincare industry has a Kenya problem — and it\'s costing consumers millions.\n\nEvery year, Kenyan consumers spend billions on imported skincare products that were never formulated for African skin or the Kenyan climate.\n\nThe result? Products that:\n• Feel too heavy in Nairobi\'s humidity\n• Don\'t account for our higher UV index\n• Contain ingredients that affect melanin-rich skin differently\n• Are priced in dollars but sold to KES-earning consumers\n\nAt Savanna Skincare, we\'re building something different: premium natural skincare formulated specifically for Kenyan skin, using locally sourced ingredients, at a price that makes sense for the Kenyan market.\n\nWe\'re not adapting a Western formula. We\'re starting from scratch — with Kenyan skin, Kenyan climate, and Kenyan consumers at the centre.\n\nThis is what "Made in Kenya" should mean.\n\n#MadeInKenya #KenyaBeauty #AfricanSkincare #Entrepreneurship #NairobiStartup',
-    hashtags: '#MadeInKenya #KenyaBeauty #AfricanSkincare #Entrepreneurship',
-    bestTime: 'Wednesday 8:00am EAT',
-    engagement: 'High — thought leadership posts build brand authority and attract B2B partnerships',
-  },
-]
+const platforms = ['instagram', 'whatsapp', 'tiktok', 'linkedin', 'facebook', 'twitter']
+const platformIcons: Record<string, string> = { instagram: '📸', whatsapp: '💬', tiktok: '🎵', linkedin: '💼', facebook: '👥', twitter: '🐦' }
+const pillarColors: Record<string, string> = { education: '#1A7A6E', community: '#D9910B', promotion: '#F25C05' }
 
 const calendarWeek = [
-  { day: 'Mon', platform: 'Instagram', type: 'Educational Carousel', time: '7:30am', pillar: 'Education' },
-  { day: 'Tue', platform: 'WhatsApp', type: 'Weekly Tip Broadcast', time: '8:00am', pillar: 'Education' },
-  { day: 'Wed', platform: 'TikTok', type: 'Skincare Routine Video', time: '7:00pm', pillar: 'Education' },
-  { day: 'Thu', platform: 'Instagram', type: 'Product Reel', time: '7:00pm', pillar: 'Promotion' },
-  { day: 'Fri', platform: 'Instagram', type: 'Customer Feature / UGC', time: '12:00pm', pillar: 'Community' },
-  { day: 'Sat', platform: 'TikTok', type: 'Behind-the-Scenes', time: '10:00am', pillar: 'Community' },
-  { day: 'Sun', platform: 'Instagram', type: 'Inspirational Quote', time: '9:00am', pillar: 'Community' },
+  { day: 'Mon', platform: 'Instagram', type: 'Educational Carousel', time: '7:30am', pillar: 'education' },
+  { day: 'Tue', platform: 'WhatsApp', type: 'Weekly Tip Broadcast', time: '8:00am', pillar: 'education' },
+  { day: 'Wed', platform: 'TikTok', type: 'Short Video', time: '7:00pm', pillar: 'education' },
+  { day: 'Thu', platform: 'Instagram', type: 'Product / Service Post', time: '7:00pm', pillar: 'promotion' },
+  { day: 'Fri', platform: 'Instagram', type: 'Customer Feature / UGC', time: '12:00pm', pillar: 'community' },
+  { day: 'Sat', platform: 'TikTok', type: 'Behind-the-Scenes', time: '10:00am', pillar: 'community' },
+  { day: 'Sun', platform: 'Instagram', type: 'Inspirational Quote', time: '9:00am', pillar: 'community' },
 ]
 
-const pillarColors: Record<string, string> = { Education: '#1A7A6E', Community: '#D9910B', Promotion: '#F25C05' }
-
 export default function ContentPage() {
-  const [selectedPost, setSelectedPost] = useState(samplePosts[0])
+  const [posts, setPosts] = useState<ContentPost[]>([])
+  const [selectedPost, setSelectedPost] = useState<ContentPost | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [isPro] = useState(false)
+  const [error, setError] = useState('')
+  const [discoveryComplete, setDiscoveryComplete] = useState(false)
+
+  // Generate form state
+  const [genPlatform, setGenPlatform] = useState('instagram')
+  const [genPillar, setGenPillar] = useState<'education' | 'community' | 'promotion'>('education')
+  const [genTopic, setGenTopic] = useState('')
+  const [showGenerateForm, setShowGenerateForm] = useState(false)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const [profileRes, postsRes, discoveryRes] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('content_posts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('brand_discovery').select('completed').eq('user_id', user.id).single(),
+    ])
+
+    setProfile(profileRes.data)
+    setPosts(postsRes.data || [])
+    setDiscoveryComplete(discoveryRes.data?.completed || false)
+    if (postsRes.data && postsRes.data.length > 0) setSelectedPost(postsRes.data[0])
+    setLoading(false)
+  }
+
+  const generatePost = async () => {
+    if (!genTopic.trim()) { setError('Please enter a topic for your post'); return }
+    setGenerating(true)
+    setError('')
+    try {
+      const response = await fetch('/api/generate/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: genPlatform, pillar: genPillar, topic: genTopic, save: true }),
+      })
+      const data = await response.json()
+      if (!response.ok) { setError(data.error || 'Failed to generate content'); return }
+
+      // Refresh posts list
+      await fetchData()
+      setGenTopic('')
+      setShowGenerateForm(false)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const deletePost = async (postId: string) => {
+    const supabase = createClient()
+    await supabase.from('content_posts').delete().eq('id', postId)
+    setPosts(prev => prev.filter(p => p.id !== postId))
+    if (selectedPost?.id === postId) setSelectedPost(posts.find(p => p.id !== postId) || null)
+  }
 
   const copyCaption = () => {
-    navigator.clipboard.writeText(selectedPost.caption)
+    if (!selectedPost) return
+    navigator.clipboard.writeText(selectedPost.caption + (selectedPost.hashtags ? '\n\n' + selectedPost.hashtags : ''))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'agency'
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-8 h-8 border-2 border-[#F25C05]/30 border-t-[#F25C05] rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -85,17 +121,31 @@ export default function ContentPage() {
           </div>
           <div>
             <h1 className="text-xl font-display font-bold text-white">Content Engine</h1>
-            <p className="text-white/40 text-sm">AI-generated content for Savanna Skincare</p>
+            <p className="text-white/40 text-sm">{posts.length} posts generated · AI-powered for your brand</p>
           </div>
         </div>
-        <button className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${isPro ? 'bg-[#D9910B]/10 border border-[#D9910B]/20 text-[#D9910B]' : 'bg-[#1A2E3D] border border-white/8 text-white/30 cursor-not-allowed'}`}>
-          {isPro ? <Calendar className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-          Schedule Posts (Pro)
-        </button>
+        <div className="flex items-center gap-2">
+          <button className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${isPro ? 'bg-[#D9910B]/10 border border-[#D9910B]/20 text-[#D9910B]' : 'bg-[#1A2E3D] border border-white/8 text-white/30 cursor-not-allowed'}`}>
+            {isPro ? <Calendar className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+            Schedule Posts (Pro)
+          </button>
+        </div>
       </div>
 
+      {/* Discovery required */}
+      {!discoveryComplete && (
+        <div className="bg-[#1A2E3D] border border-white/8 rounded-2xl p-6 text-center mb-8">
+          <AlertCircle className="w-8 h-8 text-[#F25C05] mx-auto mb-3" />
+          <h2 className="text-white font-display font-semibold mb-2">Complete Brand Discovery First</h2>
+          <p className="text-white/50 text-sm mb-4">Your content is generated in your brand's voice. Complete discovery first.</p>
+          <a href="/dashboard/discovery" className="inline-flex items-center gap-2 bg-[#F25C05] hover:bg-[#D94E00] text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-all">
+            Go to Brand Discovery
+          </a>
+        </div>
+      )}
+
       {/* Content Pillars */}
-      <section className="mb-10">
+      <section className="mb-8">
         <h2 className="text-lg font-display font-semibold text-white mb-1">Content Pillars</h2>
         <p className="text-white/40 text-sm mb-5">The 70-20-10 rule — proven to build trust and drive sales</p>
         <div className="grid md:grid-cols-3 gap-4">
@@ -115,7 +165,7 @@ export default function ContentPage() {
       </section>
 
       {/* Weekly Calendar */}
-      <section className="mb-10">
+      <section className="mb-8">
         <h2 className="text-lg font-display font-semibold text-white mb-1">Weekly Content Calendar</h2>
         <p className="text-white/40 text-sm mb-5">Optimised posting schedule for maximum reach in Kenya</p>
         <div className="bg-[#1A2E3D] border border-white/8 rounded-2xl overflow-hidden">
@@ -134,60 +184,157 @@ export default function ContentPage() {
         </div>
       </section>
 
-      {/* Content Library */}
+      {/* Generate + Library */}
       <section>
-        <h2 className="text-lg font-display font-semibold text-white mb-1">Ready-to-Use Content</h2>
-        <p className="text-white/40 text-sm mb-5">AI-generated captions in your brand voice — copy and post</p>
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Post selector */}
-          <div className="space-y-2">
-            {samplePosts.map((post) => (
-              <button
-                key={post.id}
-                onClick={() => setSelectedPost(post)}
-                className={`w-full text-left p-4 rounded-xl border transition-all ${selectedPost.id === post.id ? 'bg-[#F25C05]/10 border-[#F25C05]/30' : 'bg-[#1A2E3D] border-white/8 hover:border-white/20'}`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold" style={{ color: pillarColors[post.pillar] }}>{post.platform}</span>
-                  <span className="text-white/30 text-[10px]">·</span>
-                  <span className="text-white/40 text-[10px]">{post.type}</span>
-                </div>
-                <div className="text-white/70 text-xs leading-relaxed line-clamp-2">{post.caption.substring(0, 80)}...</div>
-              </button>
-            ))}
-            <button className="w-full p-4 rounded-xl border border-dashed border-white/10 text-white/30 hover:border-[#F25C05]/30 hover:text-[#F25C05] transition-all flex items-center justify-center gap-2 text-sm">
-              <Sparkles className="w-4 h-4" /> Generate More
-            </button>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-display font-semibold text-white">Content Library</h2>
+            <p className="text-white/40 text-sm">{posts.length} posts · AI-generated in your brand voice</p>
           </div>
+          {discoveryComplete && (
+            <button onClick={() => setShowGenerateForm(!showGenerateForm)}
+              className="flex items-center gap-2 bg-[#F25C05] hover:bg-[#D94E00] text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-[#F25C05]/20">
+              <Sparkles className="w-4 h-4" /> Generate Post
+            </button>
+          )}
+        </div>
 
-          {/* Post detail */}
-          <div className="lg:col-span-2">
-            <div className="bg-[#1A2E3D] border border-white/8 rounded-2xl overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold" style={{ color: pillarColors[selectedPost.pillar] }}>{selectedPost.platform}</span>
-                  <span className="bg-white/5 text-white/40 text-xs px-2 py-0.5 rounded-full">{selectedPost.type}</span>
-                </div>
-                <button onClick={copyCaption} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F25C05]/10 border border-[#F25C05]/20 text-[#F25C05] text-xs font-medium hover:bg-[#F25C05]/20 transition-all">
-                  {copied ? <><CheckCircle className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Caption</>}
-                </button>
+        {/* Generate form */}
+        {showGenerateForm && (
+          <div className="bg-[#1A2E3D] border border-[#F25C05]/20 rounded-2xl p-6 mb-6">
+            <h3 className="text-white font-semibold mb-4">Generate a New Post</h3>
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm mb-4 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
               </div>
-              <div className="p-5">
-                <pre className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-sans">{selectedPost.caption}</pre>
+            )}
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-2">Platform</label>
+                <select value={genPlatform} onChange={e => setGenPlatform(e.target.value)}
+                  className="w-full bg-[#162330] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#F25C05]/60 transition-all">
+                  {platforms.map(p => <option key={p} value={p} className="bg-[#162330]">{platformIcons[p]} {p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                </select>
               </div>
-              <div className="px-5 pb-5 space-y-3">
-                <div className="bg-[#162330] rounded-xl p-3">
-                  <div className="text-white/30 text-xs mb-1">Best time to post</div>
-                  <div className="text-white/70 text-sm">{selectedPost.bestTime}</div>
-                </div>
-                <div className="bg-[#1A7A6E]/10 border border-[#1A7A6E]/20 rounded-xl p-3">
-                  <div className="text-[#1A7A6E] text-xs mb-1 font-semibold">Expected Performance</div>
-                  <div className="text-white/60 text-sm">{selectedPost.engagement}</div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-2">Content Pillar</label>
+                <select value={genPillar} onChange={e => setGenPillar(e.target.value as any)}
+                  className="w-full bg-[#162330] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#F25C05]/60 transition-all">
+                  <option value="education" className="bg-[#162330]">Education (70%)</option>
+                  <option value="community" className="bg-[#162330]">Community (20%)</option>
+                  <option value="promotion" className="bg-[#162330]">Promotion (10%)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-2">Topic / Idea</label>
+                <input type="text" value={genTopic} onChange={e => setGenTopic(e.target.value)}
+                  placeholder="e.g. skincare tips for Nairobi humidity"
+                  onKeyDown={e => e.key === 'Enter' && generatePost()}
+                  className="w-full bg-[#162330] border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#F25C05]/60 transition-all" />
               </div>
             </div>
+            <div className="flex gap-3">
+              <button onClick={generatePost} disabled={generating || !genTopic.trim()}
+                className="flex items-center gap-2 bg-[#F25C05] hover:bg-[#D94E00] disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-all">
+                {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate</>}
+              </button>
+              <button onClick={() => { setShowGenerateForm(false); setError('') }}
+                className="px-4 py-2.5 rounded-xl bg-[#162330] border border-white/10 text-white/50 hover:text-white text-sm transition-all">
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Posts */}
+        {posts.length === 0 ? (
+          <div className="bg-[#1A2E3D] border border-white/8 rounded-2xl p-8 text-center">
+            <MessageSquare className="w-12 h-12 text-white/20 mx-auto mb-4" />
+            <h3 className="text-white font-semibold mb-2">No posts yet</h3>
+            <p className="text-white/40 text-sm mb-4">Generate your first AI-powered social media post above.</p>
+            {discoveryComplete && (
+              <button onClick={() => setShowGenerateForm(true)}
+                className="inline-flex items-center gap-2 bg-[#F25C05] hover:bg-[#D94E00] text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-all">
+                <Sparkles className="w-4 h-4" /> Generate First Post
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Post list */}
+            <div className="space-y-2">
+              {posts.map((post) => (
+                <button key={post.id} onClick={() => setSelectedPost(post)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${selectedPost?.id === post.id ? 'bg-[#F25C05]/10 border-[#F25C05]/30' : 'bg-[#1A2E3D] border-white/8 hover:border-white/20'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm">{platformIcons[post.platform]}</span>
+                    <span className="text-xs font-bold" style={{ color: pillarColors[post.pillar || 'education'] }}>
+                      {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}
+                    </span>
+                    {post.post_type && <span className="text-white/30 text-[10px]">· {post.post_type}</span>}
+                  </div>
+                  <div className="text-white/70 text-xs leading-relaxed line-clamp-2">{post.caption.substring(0, 80)}...</div>
+                  <div className="text-white/20 text-[10px] mt-1">{new Date(post.created_at).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })}</div>
+                </button>
+              ))}
+              {discoveryComplete && (
+                <button onClick={() => setShowGenerateForm(true)}
+                  className="w-full p-4 rounded-xl border border-dashed border-white/10 text-white/30 hover:border-[#F25C05]/30 hover:text-[#F25C05] transition-all flex items-center justify-center gap-2 text-sm">
+                  <Sparkles className="w-4 h-4" /> Generate More
+                </button>
+              )}
+            </div>
+
+            {/* Post detail */}
+            {selectedPost && (
+              <div className="lg:col-span-2">
+                <div className="bg-[#1A2E3D] border border-white/8 rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between p-4 border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{platformIcons[selectedPost.platform]}</span>
+                      <span className="text-sm font-bold" style={{ color: pillarColors[selectedPost.pillar || 'education'] }}>
+                        {selectedPost.platform.charAt(0).toUpperCase() + selectedPost.platform.slice(1)}
+                      </span>
+                      {selectedPost.post_type && <span className="bg-white/5 text-white/40 text-xs px-2 py-0.5 rounded-full">{selectedPost.post_type}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={copyCaption}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F25C05]/10 border border-[#F25C05]/20 text-[#F25C05] text-xs font-medium hover:bg-[#F25C05]/20 transition-all">
+                        {copied ? <><CheckCircle className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                      </button>
+                      <button onClick={() => deletePost(selectedPost.id)}
+                        className="p-1.5 rounded-lg text-white/20 hover:text-red-400 hover:bg-red-400/10 transition-all">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <pre className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-sans">{selectedPost.caption}</pre>
+                    {selectedPost.hashtags && (
+                      <div className="mt-3 pt-3 border-t border-white/5">
+                        <p className="text-[#1A7A6E] text-sm">{selectedPost.hashtags}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="px-5 pb-5 space-y-3">
+                    {selectedPost.best_time && (
+                      <div className="bg-[#162330] rounded-xl p-3">
+                        <div className="text-white/30 text-xs mb-1">Best time to post</div>
+                        <div className="text-white/70 text-sm">{selectedPost.best_time}</div>
+                      </div>
+                    )}
+                    {selectedPost.engagement_prediction && (
+                      <div className="bg-[#1A7A6E]/10 border border-[#1A7A6E]/20 rounded-xl p-3">
+                        <div className="text-[#1A7A6E] text-xs mb-1 font-semibold">Expected Performance</div>
+                        <div className="text-white/60 text-sm">{selectedPost.engagement_prediction}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   )

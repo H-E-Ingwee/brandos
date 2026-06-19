@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { Resend } from 'resend'
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const resend = new Resend(process.env.RESEND_API_KEY!)
 
 // ── GET: List team members and pending invitations ────────────────────────────
 export async function GET(request: NextRequest) {
@@ -90,21 +90,23 @@ export async function POST(request: NextRequest) {
 
     if (!org) return NextResponse.json({ error: 'Organisation not found' }, { status: 404 })
 
-    // Check plan allows team members
-    if (org.plan === 'free' || org.plan === 'growth') {
+    const testMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true'
+
+    // Check plan allows team members (bypass in test mode)
+    if (!testMode && (org.plan === 'free' || org.plan === 'growth')) {
       return NextResponse.json({
         error: 'Team members are only available on Pro and Agency plans. Upgrade to invite team members.',
         upgrade_required: true,
       }, { status: 403 })
     }
 
-    // Check member limit
+    // Check member limit (bypass in test mode)
     const { count: memberCount } = await supabase
       .from('team_members')
       .select('id', { count: 'exact' })
       .eq('organisation_id', org.id)
 
-    if (org.plan === 'pro' && (memberCount || 0) >= 3) {
+    if (!testMode && org.plan === 'pro' && (memberCount || 0) >= 3) {
       return NextResponse.json({
         error: 'Pro plan allows up to 3 team members. Upgrade to Agency for unlimited members.',
         upgrade_required: true,
@@ -157,13 +159,12 @@ export async function POST(request: NextRequest) {
     const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
 
     try {
-      if (resend) {
-        await resend.emails.send({
-          from: 'BrandOS <onboarding@resend.dev>',
-          replyTo: 'Ingweplex@gmail.com',
-          to: email,
-          subject: `${inviterName} invited you to join ${orgName} on BrandOS`,
-          html: `
+      await resend.emails.send({
+        from: 'BrandOS <onboarding@resend.dev>',
+        replyTo: 'Ingweplex@gmail.com',
+        to: email,
+        subject: `${inviterName} invited you to join ${orgName} on BrandOS`,
+        html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -208,8 +209,7 @@ export async function POST(request: NextRequest) {
   </div>
 </body>
 </html>`,
-        })
-      }
+      })
     } catch (emailError) {
       console.error('Invitation email error:', emailError)
       // Don't fail — invitation was created, email just didn't send

@@ -1,23 +1,14 @@
 import { Resend } from 'resend'
 
-const resendApiKey = process.env.RESEND_API_KEY
-const resend = resendApiKey ? new Resend(resendApiKey) : null
+const resend = new Resend(process.env.RESEND_API_KEY!)
 
 // Sender — use Resend's free domain for now, swap to your domain later
 const FROM = 'BrandOS <onboarding@resend.dev>'
 const REPLY_TO = 'Ingweplex@gmail.com'
 
-function assertResendConfigured() {
-  if (!resend) {
-    throw new Error('RESEND_API_KEY is not configured')
-  }
-}
-
 // ── WELCOME EMAIL ─────────────────────────────────────────────────────────────
 export async function sendWelcomeEmail(to: string, name: string, businessName: string) {
-  assertResendConfigured()
-
-  return resend!.emails.send({
+  return resend.emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to,
@@ -99,13 +90,11 @@ export async function sendPaymentReceiptEmail(
   txRef: string,
   paymentMethod: string
 ) {
-  assertResendConfigured()
-
   const planDisplay = plan.charAt(0).toUpperCase() + plan.slice(1)
   const amountDisplay = currency === 'KES' ? `KES ${amount.toLocaleString()}` : `$${amount}`
   const date = new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })
 
-  return resend!.emails.send({
+  return resend.emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to,
@@ -177,10 +166,8 @@ export async function sendPaymentReceiptEmail(
 
 // ── PLAN UPGRADE NOTIFICATION ─────────────────────────────────────────────────
 export async function sendPlanUpgradeEmail(to: string, name: string, newPlan: string) {
-  assertResendConfigured()
-
   const planDisplay = newPlan.charAt(0).toUpperCase() + newPlan.slice(1)
-  return resend!.emails.send({
+  return resend.emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to,

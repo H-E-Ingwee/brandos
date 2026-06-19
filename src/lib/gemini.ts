@@ -1,18 +1,10 @@
 import Groq from 'groq-sdk'
 import type { BrandDiscovery, Profile } from './supabase/types'
 
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
+
 // Best free model on Groq — fast, smart, great for brand strategy
 export const MODEL = 'llama-3.3-70b-versatile'
-
-function getGroqClient() {
-  const apiKey = process.env.GROQ_API_KEY
-
-  if (!apiKey) {
-    throw new Error('Missing GROQ_API_KEY environment variable')
-  }
-
-  return new Groq({ apiKey })
-}
 
 // ── SYSTEM PROMPT BUILDER ─────────────────────────────────────────────────────
 export function buildSystemPrompt(
@@ -73,8 +65,6 @@ export async function chat(
   messages: { role: 'user' | 'assistant'; content: string }[],
   systemPrompt: string
 ): Promise<string> {
-  const groq = getGroqClient()
-
   const completion = await groq.chat.completions.create({
     model: MODEL,
     messages: [
@@ -148,8 +138,6 @@ Generate this exact JSON structure:
   "competitive_advantage": "2-3 sentence summary of the core competitive advantage"
 }`
 
-  const groq = getGroqClient()
-
   const completion = await groq.chat.completions.create({
     model: MODEL,
     messages: [{ role: 'user', content: prompt }],
@@ -210,8 +198,6 @@ Return ONLY valid JSON (no markdown):
   "best_time": "Best time to post in EAT timezone",
   "engagement_prediction": "Expected engagement level and why"
 }`
-
-  const groq = getGroqClient()
 
   const completion = await groq.chat.completions.create({
     model: MODEL,
@@ -289,8 +275,6 @@ Return ONLY valid JSON (no markdown):
     {"category": "Tools & Software", "amount": 0, "percent": 0, "desc": "description"}
   ]
 }`
-
-  const groq = getGroqClient()
 
   const completion = await groq.chat.completions.create({
     model: MODEL,

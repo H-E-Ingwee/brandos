@@ -221,16 +221,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Upgrade CTA for free users */}
-          {profile?.plan === 'free' && (
-            <div className="bg-[#1A2E3D] border border-[#D9910B]/20 rounded-2xl p-6">
-              <div className="text-[#D9910B] text-xs font-bold uppercase tracking-wider mb-2">Free Plan</div>
-              <div className="text-white font-semibold mb-1">Unlock all 6 modules</div>
-              <div className="text-white/40 text-xs mb-4">Upgrade to Growth for KES 1,500/month and get your complete brand system.</div>
-              <Link href="/dashboard/settings" className="block w-full bg-[#D9910B]/10 hover:bg-[#D9910B]/20 border border-[#D9910B]/30 text-[#D9910B] text-center py-2.5 rounded-xl text-sm font-semibold transition-all">
-                Upgrade to Growth
-              </Link>
-            </div>
-          )}
+          
 
           {/* Brand score card */}
           {brandScore > 0 && (

@@ -209,11 +209,7 @@ export default function SettingsPage() {
                           </div>
                         ))}
                       </div>
-                      {!isCurrent && (
-                        <button className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all bg-[#F25C05]/10 text-[#F25C05] border border-[#F25C05]/20 hover:bg-[#F25C05]/20">
-                          Upgrade — Pay via M-Pesa
-                        </button>
-                      )}
+                      
                     </div>
                   )
                 })}

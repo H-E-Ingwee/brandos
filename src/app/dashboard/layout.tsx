@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   Sparkles, LayoutDashboard, Target, Palette, TrendingUp,
   MessageSquare, BarChart3, Settings, ChevronRight, Bell,
-  LogOut, Menu, X, Zap, Crown
+  LogOut, Menu, X, Zap, Crown, CreditCard, Users
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/supabase/types'
@@ -19,6 +19,8 @@ const navItems = [
   { href: '/dashboard/marketing', icon: TrendingUp, label: 'Marketing Plan' },
   { href: '/dashboard/content', icon: MessageSquare, label: 'Content Engine' },
   { href: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
+  { href: '/dashboard/team', icon: Users, label: 'Team' },
+  { href: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
