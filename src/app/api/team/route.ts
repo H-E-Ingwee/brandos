@@ -3,7 +3,15 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+function getResendClient() {
+  if (!resend) {
+    throw new Error('RESEND_API_KEY is not configured')
+  }
+
+  return resend
+}
 
 // ── GET: List team members and pending invitations ────────────────────────────
 export async function GET(request: NextRequest) {
@@ -159,12 +167,15 @@ export async function POST(request: NextRequest) {
     const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
 
     try {
-      await resend.emails.send({
-        from: 'BrandOS <onboarding@resend.dev>',
-        replyTo: 'Ingweplex@gmail.com',
-        to: email,
-        subject: `${inviterName} invited you to join ${orgName} on BrandOS`,
-        html: `
+      if (!resend) {
+        console.warn('Skipping invitation email because RESEND_API_KEY is not configured')
+      } else {
+        await getResendClient().emails.send({
+          from: 'BrandOS <onboarding@resend.dev>',
+          replyTo: 'Ingweplex@gmail.com',
+          to: email,
+          subject: `${inviterName} invited you to join ${orgName} on BrandOS`,
+          html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -209,7 +220,8 @@ export async function POST(request: NextRequest) {
   </div>
 </body>
 </html>`,
-      })
+        })
+      }
     } catch (emailError) {
       console.error('Invitation email error:', emailError)
       // Don't fail — invitation was created, email just didn't send
