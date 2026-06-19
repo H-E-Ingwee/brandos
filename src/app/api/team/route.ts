@@ -3,7 +3,15 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+function getResendClient() {
+  if (!resend) {
+    throw new Error('RESEND_API_KEY is not configured')
+  }
+
+  return resend
+}
 
 // ── GET: List team members and pending invitations ────────────────────────────
 export async function GET(request: NextRequest) {

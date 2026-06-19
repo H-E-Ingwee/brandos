@@ -1,14 +1,22 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 // Sender — use Resend's free domain for now, swap to your domain later
 const FROM = 'BrandOS <onboarding@resend.dev>'
 const REPLY_TO = 'Ingweplex@gmail.com'
 
+function getResendClient() {
+  if (!resend) {
+    throw new Error('RESEND_API_KEY is not configured')
+  }
+
+  return resend
+}
+
 // ── WELCOME EMAIL ─────────────────────────────────────────────────────────────
 export async function sendWelcomeEmail(to: string, name: string, businessName: string) {
-  return resend.emails.send({
+  return getResendClient().emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to,
