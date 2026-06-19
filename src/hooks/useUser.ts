@@ -22,7 +22,7 @@ export function useUser() {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
         setProfile(profile)
       }
       setLoading(false)
@@ -38,7 +38,7 @@ export function useUser() {
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single()
+            .maybeSingle()
           setProfile(profile)
         } else {
           setProfile(null)
@@ -62,7 +62,7 @@ export function useUser() {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
     setProfile(profile)
   }
 

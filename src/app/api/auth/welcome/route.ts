@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('full_name, business_name, welcome_email_sent')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     // Don't send twice
     if ((profile as any)?.welcome_email_sent) {

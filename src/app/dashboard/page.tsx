@@ -19,9 +19,9 @@ export default function DashboardPage() {
       if (!user) return
 
       const [p, d, s] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('brand_discovery').select('*').eq('user_id', user.id).single(),
-        supabase.from('brand_strategy').select('*').eq('user_id', user.id).single(),
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('brand_discovery').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('brand_strategy').select('*').eq('user_id', user.id).maybeSingle(),
       ])
 
       setProfile(p.data)

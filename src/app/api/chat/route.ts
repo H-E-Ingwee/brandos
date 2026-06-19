@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
 
     // Get user profile + brand data
     const [profileResult, discoveryResult, strategyResult] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('brand_discovery').select('*').eq('user_id', user.id).single(),
-      supabase.from('brand_strategy').select('*').eq('user_id', user.id).single(),
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      supabase.from('brand_discovery').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('brand_strategy').select('*').eq('user_id', user.id).maybeSingle(),
     ])
 
     const profile = profileResult.data

@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
 
     // Get discovery + strategy for context
     const [discoveryResult, strategyResult] = await Promise.all([
-      supabase.from('brand_discovery').select('*').eq('user_id', user.id).single(),
-      supabase.from('brand_strategy').select('tagline, tone_of_voice').eq('user_id', user.id).single(),
+      supabase.from('brand_discovery').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('brand_strategy').select('tagline, tone_of_voice').eq('user_id', user.id).maybeSingle(),
     ])
 
     const discovery = discoveryResult.data

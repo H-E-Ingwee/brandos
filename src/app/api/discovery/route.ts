@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       .from('brand_discovery')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     return NextResponse.json({ discovery })
   } catch (error) {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       .from('brand_discovery')
       .upsert(updateData, { onConflict: 'user_id' })
       .select()
-      .single()
+      .maybeSingle()
 
     if (upsertError) {
       console.error('Discovery upsert error:', upsertError)

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       .from('brand_discovery')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (discoveryError || !discovery) {
       return NextResponse.json(
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         generated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' })
       .select()
-      .single()
+      .maybeSingle()
 
     if (saveError) {
       console.error('Strategy save error:', saveError)
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       .from('brand_strategy')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     return NextResponse.json({ strategy })
 

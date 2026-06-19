@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
@@ -54,7 +54,7 @@ export async function PATCH(request: NextRequest) {
       .update(parsed.data)
       .eq('id', user.id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (updateError) {
       return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })

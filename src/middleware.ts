@@ -26,27 +26,8 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+
   const { pathname } = request.nextUrl
-
-  // Public pages — always accessible without auth
-  const publicPages = [
-    '/forgot-password',
-    '/reset-password',
-    '/signup/verify-email',
-    '/admin',
-    '/invite',
-  ]
-  if (publicPages.some(p => pathname.startsWith(p))) {
-    return supabaseResponse
-  }
-
-  // Auth routes — redirect to dashboard if already logged in
-  const authRoutes = ['/login', '/signup']
-  if (authRoutes.includes(pathname) && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
 
   // Protected routes — redirect to login if not authenticated
   if (pathname.startsWith('/dashboard') && !user) {
@@ -55,6 +36,8 @@ export async function middleware(request: NextRequest) {
     url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
+
+  
 
   return supabaseResponse
 }

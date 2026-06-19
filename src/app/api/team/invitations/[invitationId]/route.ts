@@ -15,7 +15,7 @@ export async function DELETE(
       .from('organisations')
       .select('id')
       .eq('owner_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!org) return NextResponse.json({ error: 'Not authorised' }, { status: 403 })
 
@@ -24,7 +24,7 @@ export async function DELETE(
       .select('id, email, role')
       .eq('id', params.invitationId)
       .eq('organisation_id', org.id)
-      .single()
+      .maybeSingle()
 
     if (!invitation) return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })
 

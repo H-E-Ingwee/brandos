@@ -25,7 +25,7 @@ export async function PATCH(
       .from('organisations')
       .select('id, owner_id')
       .eq('owner_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!org) return NextResponse.json({ error: 'Not authorised to manage this team' }, { status: 403 })
 
@@ -35,7 +35,7 @@ export async function PATCH(
       .select('id, user_id, role')
       .eq('id', params.memberId)
       .eq('organisation_id', org.id)
-      .single()
+      .maybeSingle()
 
     if (!member) return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
 
@@ -45,7 +45,7 @@ export async function PATCH(
       .update({ role: parsed.data.role })
       .eq('id', params.memberId)
       .select()
-      .single()
+      .maybeSingle()
 
     if (updateError) return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
 
@@ -81,7 +81,7 @@ export async function DELETE(
       .from('organisations')
       .select('id, owner_id')
       .eq('owner_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (!org) return NextResponse.json({ error: 'Not authorised' }, { status: 403 })
 
@@ -91,7 +91,7 @@ export async function DELETE(
       .select('id, user_id, role')
       .eq('id', params.memberId)
       .eq('organisation_id', org.id)
-      .single()
+      .maybeSingle()
 
     if (!member) return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
 

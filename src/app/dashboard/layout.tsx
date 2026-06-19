@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   Sparkles, LayoutDashboard, Target, Palette, TrendingUp,
   MessageSquare, BarChart3, Settings, ChevronRight, Bell,
-  LogOut, Menu, X, Zap, Crown, CreditCard, Users
+  LogOut, Menu, X, Zap, Crown, CreditCard, Users, Sun, Moon
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/supabase/types'
@@ -29,6 +29,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [email, setEmail] = useState('')
+  const [isDark, setIsDark] = useState(true)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('brandos-theme')
+    const dark = saved !== 'light'
+    setIsDark(dark)
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -36,11 +44,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       setEmail(user.email || '')
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
       if (data) setProfile(data)
     }
     fetchProfile()
   }, [router])
+
+  const toggleTheme = () => {
+    const newTheme = isDark ? 'light' : 'dark'
+    setIsDark(!isDark)
+    localStorage.setItem('brandos-theme', newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
+  }
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -80,7 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Crown className={`w-3.5 h-3.5 ${profile?.plan === 'free' ? 'text-[#D9910B]' : 'text-[#1A7A6E]'}`} />
             <span className={`text-xs font-semibold ${profile?.plan === 'free' ? 'text-[#D9910B]' : 'text-[#1A7A6E]'}`}>{planLabel} Plan</span>
             {profile?.plan === 'free' && (
-              <Link href="/dashboard/settings" className="ml-auto text-[#D9910B] text-xs hover:underline">Upgrade</Link>
+              <Link href="/dashboard/upgrade" className="ml-auto text-[#D9910B] text-xs hover:underline">Upgrade</Link>
             )}
           </div>
         </div>
@@ -153,6 +168,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
           <div className="flex items-center gap-3 ml-auto">
+            <button onClick={toggleTheme}
+              className="w-9 h-9 rounded-xl bg-[#1A2E3D] border border-white/8 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <button className="relative w-9 h-9 rounded-xl bg-[#1A2E3D] border border-white/8 flex items-center justify-center text-white/50 hover:text-white transition-colors">
               <Bell className="w-4 h-4" />
             </button>

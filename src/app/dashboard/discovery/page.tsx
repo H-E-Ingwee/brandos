@@ -44,7 +44,7 @@ export default function DiscoveryPage() {
         .from('brand_discovery')
         .select('*')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (discovery) {
         if (discovery.completed) { setCompleted(true); return }

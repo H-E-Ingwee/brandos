@@ -33,7 +33,7 @@ function BillingContent() {
     if (!user) return
 
     const [profileRes, paymentsRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       supabase.from('payments').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
     ])
 

@@ -17,10 +17,10 @@ export function useBrand(userId: string | undefined) {
     setLoading(true)
 
     const [d, s, i, m] = await Promise.all([
-      supabase.from('brand_discovery').select('*').eq('user_id', userId).single(),
-      supabase.from('brand_strategy').select('*').eq('user_id', userId).single(),
-      supabase.from('visual_identity').select('*').eq('user_id', userId).single(),
-      supabase.from('marketing_plan').select('*').eq('user_id', userId).single(),
+      supabase.from('brand_discovery').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('brand_strategy').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('visual_identity').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('marketing_plan').select('*').eq('user_id', userId).maybeSingle(),
     ])
 
     setDiscovery(d.data)

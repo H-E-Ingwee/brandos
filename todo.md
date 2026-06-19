@@ -1,7 +1,10 @@
-# Tasks - Admin & RBAC Testing
-- [ ] Create Supabase seed SQL for admin account
-- [ ] Add test mode bypass for plan restrictions
-- [ ] Build admin dashboard page
-- [ ] Build admin API routes
-- [ ] Update env files
-- [ ] Verify build
+# Tasks - BrandOS Major Upgrade
+- [ ] Fix 406 errors (maybeSingle everywhere)
+- [ ] Fix payment 500 error (column name + IntaSend)
+- [ ] Upgrade Visual Identity (logo upload, custom colors, fonts, AI)
+- [ ] Upgrade Marketing Plan (real user data, sector-aware)
+- [ ] Upgrade Content Engine (sector-aware, more effective)
+- [ ] Add dark/light mode system-wide
+- [ ] Upgrade profile and settings pages
+- [ ] Update landing page content
+- [ ] Verify build and deliver
