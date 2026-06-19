@@ -3,31 +3,82 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Eye, EyeOff, ArrowRight, Mail, Lock, User, Building2, CheckCircle } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, ArrowRight, Mail, Lock, User, Building2, CheckCircle, AlertCircle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
-const sectors = ['E-Commerce', 'Healthcare', 'Technology / Startup', 'Professional Services', 'NGO / Social Enterprise', 'Restaurant / Food', 'Retail', 'Education', 'Real Estate', 'Other']
+const sectors = [
+  'E-Commerce / Retail', 'Healthcare / Wellness', 'Technology / Startup',
+  'Professional Services', 'NGO / Social Enterprise', 'Restaurant / Food & Beverage',
+  'Education', 'Real Estate', 'Agriculture / Agritech', 'Finance / Fintech', 'Other'
+]
 
 export default function SignupPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
-    name: '', email: '', password: '', businessName: '', sector: '', size: '',
+    name: '', email: '', password: '',
+    businessName: '', sector: '', size: '',
   })
 
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault()
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    setError('')
     setStep(2)
   }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1500))
-    router.push('/dashboard')
+    setError('')
+
+    const supabase = createClient()
+
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          full_name: form.name,
+          business_name: form.businessName,
+          sector: form.sector,
+          business_size: form.size,
+        },
+        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    })
+
+    if (signupError) {
+      setError(signupError.message)
+      setLoading(false)
+      return
+    }
+
+    // Update profile with business details
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: form.name,
+        business_name: form.businessName,
+        sector: form.sector,
+        business_size: form.size,
+      })
+    }
+
+    // If email confirmation is required, show message
+    if (data.session === null) {
+      router.push('/signup/verify-email?email=' + encodeURIComponent(form.email))
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   return (
@@ -60,6 +111,13 @@ export default function SignupPage() {
         </div>
 
         <div className="bg-[#1A2E3D] border border-white/8 rounded-2xl p-8">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-center gap-3 text-red-400 text-sm mb-5">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
           {step === 1 ? (
             <>
               <h1 className="text-2xl font-display font-bold text-white mb-1">Create your account</h1>
@@ -69,27 +127,36 @@ export default function SignupPage() {
                   <label className="block text-sm font-medium text-white/70 mb-2">Full name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <input type="text" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Your full name" className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all" required />
+                    <input type="text" value={form.name} onChange={e => update('name', e.target.value)}
+                      placeholder="Your full name"
+                      className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all"
+                      required autoComplete="name" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">Email address</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <input type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="you@business.com" className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all" required />
+                    <input type="email" value={form.email} onChange={e => update('email', e.target.value)}
+                      placeholder="you@business.com"
+                      className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all"
+                      required autoComplete="email" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => update('password', e.target.value)} placeholder="Min. 8 characters" className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-12 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all" required minLength={8} />
+                    <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => update('password', e.target.value)}
+                      placeholder="Min. 8 characters"
+                      className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-12 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all"
+                      required minLength={8} autoComplete="new-password" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
-                <button type="submit" className="w-full bg-[#F25C05] hover:bg-[#D94E00] text-white font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#F25C05]/20">
+                <button type="submit" className="w-full bg-[#F25C05] hover:bg-[#D94E00] text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#F25C05]/20">
                   Continue <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
@@ -103,12 +170,17 @@ export default function SignupPage() {
                   <label className="block text-sm font-medium text-white/70 mb-2">Business name</label>
                   <div className="relative">
                     <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <input type="text" value={form.businessName} onChange={e => update('businessName', e.target.value)} placeholder="Your business name" className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all" required />
+                    <input type="text" value={form.businessName} onChange={e => update('businessName', e.target.value)}
+                      placeholder="Your business name"
+                      className="w-full bg-[#162330] border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all"
+                      required />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">Industry / Sector</label>
-                  <select value={form.sector} onChange={e => update('sector', e.target.value)} className="w-full bg-[#162330] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all" required>
+                  <select value={form.sector} onChange={e => update('sector', e.target.value)}
+                    className="w-full bg-[#162330] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#F25C05]/60 focus:ring-2 focus:ring-[#F25C05]/20 transition-all"
+                    required>
                     <option value="" className="bg-[#162330]">Select your sector</option>
                     {sectors.map(s => <option key={s} value={s} className="bg-[#162330]">{s}</option>)}
                   </select>
@@ -117,7 +189,8 @@ export default function SignupPage() {
                   <label className="block text-sm font-medium text-white/70 mb-2">Business size</label>
                   <div className="grid grid-cols-3 gap-3">
                     {['Solo', '2–10', '10+'].map(size => (
-                      <button key={size} type="button" onClick={() => update('size', size)} className={`py-3 rounded-xl border text-sm font-medium transition-all ${form.size === size ? 'bg-[#F25C05]/10 border-[#F25C05]/40 text-[#F25C05]' : 'bg-[#162330] border-white/10 text-white/50 hover:border-white/20'}`}>
+                      <button key={size} type="button" onClick={() => update('size', size)}
+                        className={`py-3 rounded-xl border text-sm font-medium transition-all ${form.size === size ? 'bg-[#F25C05]/10 border-[#F25C05]/40 text-[#F25C05]' : 'bg-[#162330] border-white/10 text-white/50 hover:border-white/20'}`}>
                         {size}
                       </button>
                     ))}
@@ -127,8 +200,12 @@ export default function SignupPage() {
                   <button type="button" onClick={() => setStep(1)} className="flex-1 bg-[#162330] hover:bg-[#1A2E3D] text-white font-medium py-3.5 rounded-xl border border-white/10 transition-all">
                     Back
                   </button>
-                  <button type="submit" disabled={loading} className="flex-1 bg-[#F25C05] hover:bg-[#D94E00] disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#F25C05]/20">
-                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Launch BrandOS <Sparkles className="w-4 h-4" /></>}
+                  <button type="submit" disabled={loading || !form.size}
+                    className="flex-1 bg-[#F25C05] hover:bg-[#D94E00] disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#F25C05]/20">
+                    {loading
+                      ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      : <><span>Launch BrandOS</span><Sparkles className="w-4 h-4" /></>
+                    }
                   </button>
                 </div>
               </form>
