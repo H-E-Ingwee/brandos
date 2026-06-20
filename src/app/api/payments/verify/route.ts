@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { checkPaymentStatus } from '@/lib/intasend'
+import { verifyTransaction } from '@/lib/paystack'
 import { sendPaymentReceiptEmail, sendPlanUpgradeEmail } from '@/lib/resend'
 import { z } from 'zod'
 
 const schema = z.object({
-  invoice_id: z.string().optional(),
+  reference: z.string().optional(),
   tx_ref: z.string().optional(),
   payment_id: z.string().optional(),
 })
@@ -20,89 +20,73 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
-    const { invoice_id, tx_ref, payment_id } = parsed.data
+    const { reference, tx_ref, payment_id } = parsed.data
+    const ref = reference || tx_ref
 
-    // Find the payment record
+    // Find payment record
     let query = supabase.from('payments').select('*').eq('user_id', user.id)
     if (payment_id) query = query.eq('id', payment_id)
-    else if (tx_ref) query = query.eq('flutterwave_tx_ref', tx_ref)
+    else if (ref) query = query.eq('flutterwave_tx_ref', ref)
 
-    const { data: payment, error: paymentError } = await query.single()
+    const { data: payment } = await query.maybeSingle()
 
-    if (paymentError || !payment) {
-      return NextResponse.json({ error: 'Payment record not found' }, { status: 404 })
-    }
-
-    // If already confirmed, return success
+    if (!payment) return NextResponse.json({ error: 'Payment record not found' }, { status: 404 })
     if (payment.status === 'success') {
       return NextResponse.json({ status: 'success', plan: payment.plan, already_confirmed: true })
     }
 
-    // Check status with IntaSend
-    const invoiceToCheck = invoice_id || payment.flutterwave_tx_id
-    if (!invoiceToCheck) {
-      return NextResponse.json({ status: 'pending', message: 'Payment is being processed' })
-    }
+    // Verify with Paystack
+    const payRef = ref || payment.flutterwave_tx_ref
+    if (!payRef) return NextResponse.json({ status: 'pending', message: 'Payment is being processed' })
 
-    let statusData: any
+    let verification: any
     try {
-      statusData = await checkPaymentStatus(invoiceToCheck)
+      verification = await verifyTransaction(payRef)
     } catch (e) {
-      return NextResponse.json({ status: 'pending', message: 'Payment is being processed' })
+      return NextResponse.json({ status: 'pending', message: 'Payment is being processed. Please wait.' })
     }
 
-    const invoiceStatus = statusData?.invoice?.state || statusData?.state || ''
-    const isSuccess = invoiceStatus === 'COMPLETE' || invoiceStatus === 'complete' || statusData?.status === 'success'
-    const isFailed = invoiceStatus === 'FAILED' || invoiceStatus === 'failed' || invoiceStatus === 'CANCELLED'
+    const isSuccess = verification.status === 'success'
+    const isFailed = verification.status === 'failed' || verification.status === 'abandoned'
 
     if (isSuccess) {
-      // Update payment status
-      await supabase.from('payments')
-        .update({ status: 'success', flutterwave_tx_id: invoiceToCheck })
-        .eq('id', payment.id)
+      // Update payment
+      await supabase.from('payments').update({ status: 'success' }).eq('id', payment.id)
 
       // Upgrade user plan
-      await supabase.from('profiles')
-        .update({ plan: payment.plan })
-        .eq('id', user.id)
+      await supabase.from('profiles').update({ plan: payment.plan }).eq('id', user.id)
 
-      // Get profile for email
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      // Update organisation plan
+      await supabase.from('organisations').update({
+        plan: payment.plan,
+        max_members: payment.plan === 'pro' ? 3 : payment.plan === 'agency' ? 999 : 1,
+      }).eq('owner_id', user.id)
 
-      // Send receipt email
-      if (profile) {
-        try {
-          await sendPaymentReceiptEmail(
-            user.email!,
-            profile.full_name || 'there',
-            payment.plan,
-            payment.amount,
-            payment.currency,
-            payment.flutterwave_tx_ref || invoiceToCheck,
-            payment.payment_method
-          )
-          await sendPlanUpgradeEmail(user.email!, profile.full_name || 'there', payment.plan)
-        } catch (emailError) {
-          console.error('Email send error:', emailError)
-          // Don't fail the payment if email fails
-        }
+      // Send emails
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+      try {
+        await sendPaymentReceiptEmail(
+          user.email!, profile?.full_name || 'there',
+          payment.plan, payment.amount, payment.currency,
+          payRef, 'card'
+        )
+        await sendPlanUpgradeEmail(user.email!, profile?.full_name || 'there', payment.plan)
+      } catch (emailErr) {
+        console.error('Email error:', emailErr)
       }
 
-      return NextResponse.json({
-        status: 'success',
-        plan: payment.plan,
-        message: `Your account has been upgraded to the ${payment.plan} plan!`,
-      })
+      return NextResponse.json({ status: 'success', plan: payment.plan, message: `Your account has been upgraded to the ${payment.plan} plan!` })
+    }
 
-    } else if (isFailed) {
+    if (isFailed) {
       await supabase.from('payments').update({ status: 'failed' }).eq('id', payment.id)
       return NextResponse.json({ status: 'failed', message: 'Payment was not completed. Please try again.' })
     }
 
-    return NextResponse.json({ status: 'pending', message: 'Payment is still being processed. Please wait a moment.' })
+    return NextResponse.json({ status: 'pending', message: 'Payment is still being processed.' })
 
   } catch (error: any) {
-    console.error('Payment verify error:', error)
+    console.error('Verify error:', error)
     return NextResponse.json({ error: 'Failed to verify payment' }, { status: 500 })
   }
 }

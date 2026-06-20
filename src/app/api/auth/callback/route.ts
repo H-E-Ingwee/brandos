@@ -25,18 +25,8 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error && session?.user) {
-      // Fix Google OAuth display name — update profile with Google name if not set
-      const user = session.user
-      const googleName = user.user_metadata?.full_name || user.user_metadata?.name
-      if (googleName) {
-        await supabase.from('profiles').upsert({
-          id: user.id,
-          full_name: googleName,
-          avatar_url: user.user_metadata?.avatar_url || null,
-        }, { onConflict: 'id' })
-      }
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
