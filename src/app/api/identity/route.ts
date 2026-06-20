@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .from('visual_identity')
       .select('*')
       .eq('user_id', user.id)
-      .maybeSingle()
+      .single()
 
     return NextResponse.json({ identity })
   } catch {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       .from('visual_identity')
       .upsert({ user_id: user.id, ...parsed.data }, { onConflict: 'user_id' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (error) return NextResponse.json({ error: 'Failed to save identity' }, { status: 500 })
 

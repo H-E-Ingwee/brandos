@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       .from('brand_discovery')
       .select('*')
       .eq('user_id', user.id)
-      .maybeSingle()
+      .single()
 
     if (discoveryError || !discovery || !discovery.completed) {
       return NextResponse.json(
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         generated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (saveError) {
       console.error('Marketing plan save error:', saveError)
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       .from('marketing_plan')
       .select('*')
       .eq('user_id', user.id)
-      .maybeSingle()
+      .single()
 
     return NextResponse.json({ plan })
 

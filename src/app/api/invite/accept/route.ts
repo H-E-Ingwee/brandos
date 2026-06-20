@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         organisation:organisations(id, name, slug, owner:profiles(full_name, business_name))
       `)
       .eq('token', token)
-      .maybeSingle()
+      .single()
 
     if (!invitation) return NextResponse.json({ error: 'Invitation not found or already used' }, { status: 404 })
     if (invitation.status !== 'pending') return NextResponse.json({ error: `This invitation has already been ${invitation.status}` }, { status: 400 })
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       .from('invitations')
       .select('*, organisation:organisations(id, owner_id)')
       .eq('token', token)
-      .maybeSingle()
+      .single()
 
     if (!invitation) return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })
     if (invitation.status !== 'pending') return NextResponse.json({ error: `This invitation has already been ${invitation.status}` }, { status: 400 })
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('organisation_id', invitation.organisation_id)
       .eq('user_id', user.id)
-      .maybeSingle()
+      .single()
 
     if (existingMember) {
       await serviceSupabase.from('invitations').update({ status: 'accepted', accepted_at: new Date().toISOString() }).eq('id', invitation.id)

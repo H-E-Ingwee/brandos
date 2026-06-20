@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     if (payment_id) query = query.eq('id', payment_id)
     else if (tx_ref) query = query.eq('flutterwave_tx_ref', tx_ref)
 
-    const { data: payment, error: paymentError } = await query.maybeSingle()
+    const { data: payment, error: paymentError } = await query.single()
 
     if (paymentError || !payment) {
       return NextResponse.json({ error: 'Payment record not found' }, { status: 404 })
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         .eq('id', user.id)
 
       // Get profile for email
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
       // Send receipt email
       if (profile) {

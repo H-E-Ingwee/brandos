@@ -3,15 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { Resend } from 'resend'
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-
-function getResendClient() {
-  if (!resend) {
-    throw new Error('RESEND_API_KEY is not configured')
-  }
-
-  return resend
-}
+const resend = new Resend(process.env.RESEND_API_KEY!)
 
 // ── GET: List team members and pending invitations ────────────────────────────
 export async function GET(request: NextRequest) {
@@ -25,7 +17,7 @@ export async function GET(request: NextRequest) {
       .from('organisations')
       .select('*')
       .eq('owner_id', user.id)
-      .maybeSingle()
+      .single()
 
     if (!org) return NextResponse.json({ error: 'Organisation not found' }, { status: 404 })
 
@@ -94,7 +86,7 @@ export async function POST(request: NextRequest) {
       .from('organisations')
       .select('*, owner:profiles(full_name, business_name)')
       .eq('owner_id', user.id)
-      .maybeSingle()
+      .single()
 
     if (!org) return NextResponse.json({ error: 'Organisation not found' }, { status: 404 })
 
@@ -125,7 +117,7 @@ export async function POST(request: NextRequest) {
       .select('id, status')
       .eq('organisation_id', org.id)
       .eq('email', email)
-      .maybeSingle()
+      .single()
 
     if (existingInvite?.status === 'pending') {
       return NextResponse.json({ error: 'An invitation has already been sent to this email address.' }, { status: 400 })
@@ -136,7 +128,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('full_name')
       .eq('id', user.id)
-      .maybeSingle()
+      .single()
 
     // Create invitation (upsert in case of previous declined/expired)
     const { data: invitation, error: inviteError } = await supabase
@@ -150,7 +142,7 @@ export async function POST(request: NextRequest) {
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       }, { onConflict: 'organisation_id,email' })
       .select()
-      .maybeSingle()
+      .single()
 
     if (inviteError) {
       console.error('Invitation error:', inviteError)
@@ -165,15 +157,12 @@ export async function POST(request: NextRequest) {
     const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
 
     try {
-      if (!resend) {
-        console.warn('Skipping invitation email because RESEND_API_KEY is not configured')
-      } else {
-        await resend.emails.send({
-          from: 'BrandOS <onboarding@resend.dev>',
-          replyTo: 'Ingweplex@gmail.com',
-          to: email,
-          subject: `${inviterName} invited you to join ${orgName} on BrandOS`,
-          html: `
+      await resend.emails.send({
+        from: 'BrandOS <onboarding@resend.dev>',
+        replyTo: 'Ingweplex@gmail.com',
+        to: email,
+        subject: `${inviterName} invited you to join ${orgName} on BrandOS`,
+        html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -218,8 +207,7 @@ export async function POST(request: NextRequest) {
   </div>
 </body>
 </html>`,
-        })
-      }
+      })
     } catch (emailError) {
       console.error('Invitation email error:', emailError)
       // Don't fail — invitation was created, email just didn't send

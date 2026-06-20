@@ -51,7 +51,7 @@ export default function TeamPage() {
     if (!user) return
 
     const [profileRes, teamRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
       fetch('/api/team').then(r => r.json()),
     ])
 

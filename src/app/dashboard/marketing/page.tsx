@@ -23,9 +23,9 @@ export default function MarketingPage() {
       if (!user) return
 
       const [profileRes, planRes, discoveryRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-        supabase.from('marketing_plan').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('brand_discovery').select('completed, business_name').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('marketing_plan').select('*').eq('user_id', user.id).single(),
+        supabase.from('brand_discovery').select('completed, business_name').eq('user_id', user.id).single(),
       ])
 
       setProfile(profileRes.data)

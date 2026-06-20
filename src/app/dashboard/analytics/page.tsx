@@ -26,13 +26,13 @@ export default function AnalyticsPage() {
     if (!user) return
 
     const [profileRes, strategyRes, discoveryRes, postsRes, chatRes, identityRes, marketingRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-      supabase.from('brand_strategy').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('brand_discovery').select('completed, business_name').eq('user_id', user.id).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('brand_strategy').select('*').eq('user_id', user.id).single(),
+      supabase.from('brand_discovery').select('completed, business_name').eq('user_id', user.id).single(),
       supabase.from('content_posts').select('id', { count: 'exact' }).eq('user_id', user.id),
       supabase.from('chat_messages').select('id', { count: 'exact' }).eq('user_id', user.id),
-      supabase.from('visual_identity').select('id').eq('user_id', user.id).maybeSingle(),
-      supabase.from('marketing_plan').select('id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('visual_identity').select('id').eq('user_id', user.id).single(),
+      supabase.from('marketing_plan').select('id').eq('user_id', user.id).single(),
     ])
 
     // Count completed modules

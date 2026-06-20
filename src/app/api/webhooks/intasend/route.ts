@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         .from('payments')
         .select('*')
         .eq('flutterwave_tx_ref', api_ref)
-        .maybeSingle()
+        .single()
       payment = data
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         .from('payments')
         .select('*')
         .eq('flutterwave_tx_id', invoice_id)
-        .maybeSingle()
+        .single()
       payment = data
     }
 
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('full_name')
       .eq('id', payment.user_id)
-      .maybeSingle()
+      .single()
 
     const userEmail = user?.email || customer?.email
     const userName = profile?.full_name || customer?.first_name || 'there'

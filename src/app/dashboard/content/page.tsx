@@ -51,9 +51,9 @@ export default function ContentPage() {
     if (!user) return
 
     const [profileRes, postsRes, discoveryRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('content_posts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
-      supabase.from('brand_discovery').select('completed').eq('user_id', user.id).maybeSingle(),
+      supabase.from('brand_discovery').select('completed').eq('user_id', user.id).single(),
     ])
 
     setProfile(profileRes.data)
