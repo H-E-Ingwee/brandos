@@ -121,7 +121,7 @@ export default function IdentityPage() {
     fetchData()
   }, [])
 
-  const palette = palettes.find(p => p.id === selectedPalette) || palettes[0]
+  const palette = palettes.find(p => p.id === selectedPalette)!
   const font = fontPairings.find(f => f.id === selectedFont)!
   const isPro = profile?.plan === 'pro' || profile?.plan === 'agency'
 

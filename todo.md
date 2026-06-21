@@ -1,7 +1,12 @@
-# Tasks - BrandOS Paystack + Full Fix
-- [ ] Replace IntaSend with Paystack
-- [ ] Fix identity page crash (null palette)
-- [ ] Restore original landing page (Africa-wide + payment text fix)
-- [ ] Add missing API routes (admin, export, generate/identity)
-- [ ] Fix Zustand deprecation warning
-- [ ] Verify build
+# Tasks - BrandOS Complete Rebuild
+- [ ] Fix env, rename AI lib, add Paystack lib
+- [ ] Fix payment routes (initiate, verify, webhook)
+- [ ] Fix upgrade page (Paystack, multi-currency)
+- [ ] Add Floating AI assistant component
+- [ ] Add Admin dashboard + API routes
+- [ ] Add PDF export route
+- [ ] Add AI identity generation route
+- [ ] Upgrade Visual Identity page (logo upload, custom colors, AI)
+- [ ] Fix dashboard layout (theme toggle, nav)
+- [ ] Add all missing SQL migrations (003, 004, 005)
+- [ ] Verify build and package

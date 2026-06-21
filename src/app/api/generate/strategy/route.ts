@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateBrandStrategy } from '@/lib/gemini'
+import { generateBrandStrategy } from '@/lib/ai'
 
 export async function POST(request: NextRequest) {
   try {

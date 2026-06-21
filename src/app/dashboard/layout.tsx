@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/supabase/types'
+import FloatingAI from '@/components/FloatingAI'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/dashboard/content', icon: MessageSquare, label: 'Content Engine' },
   { href: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/dashboard/team', icon: Users, label: 'Team' },
+  { href: '/dashboard/upgrade', icon: Crown, label: 'Upgrade' },
   { href: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
 ]
 
@@ -168,6 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      <FloatingAI />
     </div>
   )
 }

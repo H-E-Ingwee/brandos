@@ -1,46 +1,46 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Sparkles, X, Send, Bot, User, MessageCircle, Phone, Loader2, Minimize2, Maximize2 } from 'lucide-react'
+import { Sparkles, X, Send, Bot, User, Phone, Loader2, Minimize2, Maximize2, MessageCircle } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
-const WHATSAPP_NUMBER = '254798936316'
-const WHATSAPP_MSG = encodeURIComponent('Hi! I need help with BrandOS. Can you assist me?')
+const WHATSAPP = '254798936316'
+const WA_MSG = encodeURIComponent('Hi! I need help with BrandOS. Can you assist me?')
 
-const quickQuestions = [
+const QUICK_Q = [
   'How do I complete Brand Discovery?',
-  'How does M-Pesa payment work?',
+  'How does payment work?',
   'What does each plan include?',
   'How do I invite team members?',
-  'How do I generate my brand strategy?',
 ]
+
+function formatMsg(content: string) {
+  return content.split('\n').map((line, i) => {
+    if (!line.trim()) return <div key={i} className="h-1.5" />
+    if (line.startsWith('• ') || line.startsWith('- ')) return <div key={i} className="flex items-start gap-1.5 mt-1"><span className="text-[#F25C05] flex-shrink-0">•</span><span>{line.slice(2)}</span></div>
+    if (line.match(/^\d+\./)) { const num=line.split('.')[0]; const rest=line.slice(line.indexOf('.')+1).trim(); return <div key={i} className="flex items-start gap-1.5 mt-1"><span className="text-[#F25C05] font-bold flex-shrink-0 w-4">{num}.</span><span>{rest}</span></div> }
+    if (line.startsWith('**') && line.endsWith('**')) return <div key={i} className="font-semibold text-white mt-2 mb-1">{line.slice(2,-2)}</div>
+    return <div key={i}>{line}</div>
+  })
+}
 
 export default function FloatingAI() {
   const [open, setOpen] = useState(false)
   const [minimized, setMinimized] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([{
-    role: 'assistant',
-    content: 'Habari! 👋 I\'m your BrandOS AI assistant. I can help you navigate the platform, answer questions, or connect you with our team. What do you need?',
-  }])
+  const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: 'Habari! 👋 I\'m your BrandOS AI assistant. Ask me anything about the platform, your brand strategy, or connect with our team on WhatsApp. How can I help?' }])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [unread, setUnread] = useState(0)
   const pathname = usePathname()
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  // Don't show on landing page or auth pages
   const hiddenPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/admin']
   if (hiddenPaths.some(p => pathname === p) || pathname.startsWith('/invite')) return null
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  useEffect(() => {
-    if (!open) setUnread(0)
-  }, [open])
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => { if (!open) setUnread(0) }, [open])
 
   const sendMessage = async (text?: string) => {
     const msg = text || input.trim()
@@ -48,50 +48,23 @@ export default function FloatingAI() {
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setLoading(true)
-
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: msg,
-          module: 'floating-assistant',
-          history: messages.slice(-6),
-        }),
+        body: JSON.stringify({ message: msg, module: 'floating-assistant', history: messages.slice(-6) }),
       })
       const data = await response.json()
-      const reply = data.response || data.error || 'I\'m having trouble responding right now. Please try again or contact us on WhatsApp.'
+      const reply = data.response || data.error || 'I\'m having trouble responding. Please try again or contact us on WhatsApp.'
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
       if (!open) setUnread(u => u + 1)
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Please check your connection or contact us on WhatsApp.' }])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatMessage = (content: string) => {
-    // Format bold text, bullet points, and line breaks
-    return content
-      .split('\n')
-      .map((line, i) => {
-        if (line.startsWith('• ') || line.startsWith('- ')) {
-          return <div key={i} className="flex items-start gap-1.5 mt-1"><span className="text-[#F25C05] mt-0.5 flex-shrink-0">•</span><span>{line.slice(2)}</span></div>
-        }
-        if (line.match(/^\d+\./)) {
-          return <div key={i} className="flex items-start gap-1.5 mt-1"><span className="text-[#F25C05] font-bold flex-shrink-0">{line.split('.')[0]}.</span><span>{line.slice(line.indexOf('.') + 1).trim()}</span></div>
-        }
-        if (line.startsWith('**') && line.endsWith('**')) {
-          return <div key={i} className="font-semibold text-white mt-2">{line.slice(2, -2)}</div>
-        }
-        if (!line.trim()) return <div key={i} className="h-1" />
-        return <div key={i}>{line}</div>
-      })
+    } finally { setLoading(false) }
   }
 
   return (
     <>
-      {/* Chat window */}
       {open && (
         <div className={`fixed bottom-24 right-6 z-50 w-80 bg-[#0F1D26] border border-white/10 rounded-2xl shadow-2xl shadow-black/40 flex flex-col transition-all duration-300 ${minimized ? 'h-14' : 'h-[480px]'}`}>
           {/* Header */}
@@ -101,10 +74,7 @@ export default function FloatingAI() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold text-sm">BrandOS Assistant</div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#1A7A6E] animate-pulse" />
-                <span className="text-white/30 text-xs">AI + Human support</span>
-              </div>
+              <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-[#1A7A6E] animate-pulse" /><span className="text-white/30 text-xs">AI + Human support</span></div>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => setMinimized(!minimized)} className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5 transition-all">
@@ -126,15 +96,13 @@ export default function FloatingAI() {
                       {msg.role === 'assistant' ? <Bot className="w-3 h-3 text-[#F25C05]" /> : <User className="w-3 h-3 text-white/50" />}
                     </div>
                     <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${msg.role === 'assistant' ? 'bg-[#1A2E3D] text-white/80 rounded-tl-sm' : 'bg-[#F25C05]/15 border border-[#F25C05]/20 text-white/90 rounded-tr-sm'}`}>
-                      {msg.role === 'assistant' ? formatMessage(msg.content) : msg.content}
+                      {msg.role === 'assistant' ? formatMsg(msg.content) : msg.content}
                     </div>
                   </div>
                 ))}
                 {loading && (
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-full bg-[#F25C05]/20 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-3 h-3 text-[#F25C05]" />
-                    </div>
+                    <div className="w-6 h-6 rounded-full bg-[#F25C05]/20 flex items-center justify-center flex-shrink-0"><Bot className="w-3 h-3 text-[#F25C05]" /></div>
                     <div className="bg-[#1A2E3D] rounded-xl rounded-tl-sm px-3 py-2 flex items-center gap-1">
                       {[0,1,2].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />)}
                     </div>
@@ -148,11 +116,8 @@ export default function FloatingAI() {
                 <div className="px-3 pb-2">
                   <div className="text-white/25 text-[10px] mb-2 uppercase tracking-wider">Quick questions</div>
                   <div className="flex flex-wrap gap-1.5">
-                    {quickQuestions.slice(0, 3).map(q => (
-                      <button key={q} onClick={() => sendMessage(q)}
-                        className="bg-[#1A2E3D] border border-white/8 rounded-full px-2.5 py-1 text-white/50 text-[10px] hover:text-white hover:border-[#F25C05]/30 transition-all">
-                        {q}
-                      </button>
+                    {QUICK_Q.map(q => (
+                      <button key={q} onClick={() => sendMessage(q)} className="bg-[#1A2E3D] border border-white/8 rounded-full px-2.5 py-1 text-white/40 text-[10px] hover:text-white hover:border-[#F25C05]/30 transition-all">{q}</button>
                     ))}
                   </div>
                 </div>
@@ -160,7 +125,7 @@ export default function FloatingAI() {
 
               {/* WhatsApp CTA */}
               <div className="px-3 pb-2">
-                <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`} target="_blank" rel="noopener noreferrer"
+                <a href={`https://wa.me/${WHATSAPP}?text=${WA_MSG}`} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-xl px-3 py-2 text-[#25D366] text-xs font-medium hover:bg-[#25D366]/20 transition-all">
                   <Phone className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>Talk to a real person on WhatsApp</span>
@@ -191,9 +156,7 @@ export default function FloatingAI() {
         title="BrandOS AI Assistant">
         {open ? <X className="w-6 h-6 text-white" /> : <MessageCircle className="w-6 h-6 text-white" />}
         {unread > 0 && !open && (
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
-            {unread}
-          </div>
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">{unread}</div>
         )}
       </button>
     </>

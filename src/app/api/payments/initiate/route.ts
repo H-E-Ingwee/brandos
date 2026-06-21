@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
 
     const { plan, currency } = parsed.data
 
-    // Get user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles').select('*').eq('id', user.id).maybeSingle()
 
@@ -28,7 +27,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found. Please complete your account setup.' }, { status: 404 })
     }
 
-    // Check if already on this plan or higher
     const planOrder = ['free', 'growth', 'pro', 'agency']
     const currentPlanIndex = planOrder.indexOf(profile.plan || 'free')
     const newPlanIndex = planOrder.indexOf(plan)
@@ -41,7 +39,6 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://brandosapp.vercel.app'
     const callbackUrl = `${appUrl}/dashboard/billing?status=success&ref=${reference}`
 
-    // Create pending payment record
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .insert({
@@ -51,7 +48,7 @@ export async function POST(request: NextRequest) {
         plan,
         status: 'pending',
         payment_method: 'card',
-        flutterwave_tx_ref: reference, // reusing column for Paystack reference
+        flutterwave_tx_ref: reference,
         phone_number: null,
       })
       .select()
@@ -59,13 +56,9 @@ export async function POST(request: NextRequest) {
 
     if (paymentError) {
       console.error('Payment record error:', paymentError)
-      return NextResponse.json({
-        error: 'Failed to create payment record.',
-        details: paymentError.message,
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create payment record.', details: paymentError.message }, { status: 500 })
     }
 
-    // Initialize Paystack transaction
     let paystackResponse: any
     try {
       paystackResponse = await initializeTransaction({
@@ -74,21 +67,12 @@ export async function POST(request: NextRequest) {
         currency,
         reference,
         callbackUrl,
-        metadata: {
-          plan,
-          user_id: user.id,
-          payment_id: payment?.id,
-          business_name: profile.business_name || '',
-        },
+        metadata: { plan, user_id: user.id, payment_id: payment?.id, business_name: profile.business_name || '' },
       })
     } catch (paystackError: any) {
       console.error('Paystack error:', paystackError)
-      if (payment?.id) {
-        await supabase.from('payments').update({ status: 'failed' }).eq('id', payment.id)
-      }
-      return NextResponse.json({
-        error: paystackError.message || 'Payment initialization failed. Please try again.',
-      }, { status: 500 })
+      if (payment?.id) await supabase.from('payments').update({ status: 'failed' }).eq('id', payment.id)
+      return NextResponse.json({ error: paystackError.message || 'Payment initialization failed.' }, { status: 500 })
     }
 
     return NextResponse.json({

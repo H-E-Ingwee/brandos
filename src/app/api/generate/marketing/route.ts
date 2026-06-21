@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateMarketingPlan } from '@/lib/gemini'
+import { generateMarketingPlan } from '@/lib/ai'
 import { z } from 'zod'
 
 const schema = z.object({
