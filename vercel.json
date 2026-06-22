@@ -3,5 +3,8 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install --legacy-peer-deps",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "env": {
+    "NODE_VERSION": "20"
+  }
 }
